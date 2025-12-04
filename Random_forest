@@ -1,76 +1,125 @@
-library(randomForest)
+###############################################
+# 4 Random Forest en R
+# Dataset con target binario (0/1)
+# Dataset esperado: data (data.frame)
+# Variable objetivo: target
+###############################################
 
-# Dataset de ejemplo
-# data$target → variable binaria (0/1)
+# Instalar librería si no está instalada
+if(!require(randomForest)){
+    install.packages("randomForest")
+    library(randomForest)
+} else {
+    library(randomForest)
+}
+
 set.seed(123)
 
+################################################
+# 0. Verificar estructura del dataset
+################################################
+cat("Estructura del dataset:\n")
+print(str(data))
+
+cat("\nPrimeras filas del dataset:\n")
+print(head(data))
+
+################################################
+# 1. Random Forest - Clasificación Binaria
+################################################
+cat("\n==== Modelo 1: Clasificación Binaria ====\n")
+
 modelo_binario <- randomForest(
-  target ~ .,
-  data = data,
-  ntree = 500,
-  mtry = 3,
-  importance = TRUE
+    target ~ .,
+    data = data,
+    ntree = 500,
+    mtry = floor(sqrt(ncol(data) - 1)),
+    importance = TRUE
 )
 
 print(modelo_binario)
-importance(modelo_binario)
-varImpPlot(modelo_binario)
 
-library(randomForest)
+cat("\nImportancia de variables:\n")
+print(importance(modelo_binario))
 
-# data$clase → factor con varias categorías
-set.seed(123)
+# Gráfico
+varImpPlot(modelo_binario, main="Importancia de Variables - Modelo Binario")
 
-modelo_multiclase <- randomForest(
-  clase ~ .,
-  data = data,
-  ntree = 400,
-  mtry = floor(sqrt(ncol(data) - 1)),
-  importance = TRUE
-)
 
-print(modelo_multiclase)
-varImpPlot(modelo_multiclase)
+################################################
+# 2. Random Forest - Clasificación Multiclase
+# (Solo se usa si target tiene > 2 clases)
+################################################
+if(length(unique(data$target)) > 2){
+    cat("\n==== Modelo 2: Clasificación Multiclase ====\n")
 
-library(randomForest)
+    modelo_multiclase <- randomForest(
+        target ~ .,
+        data = data,
+        ntree = 400,
+        mtry = floor(sqrt(ncol(data) - 1)),
+        importance = TRUE
+    )
 
-# data$valor → variable numérica continua
-set.seed(123)
+    print(modelo_multiclase)
+    varImpPlot(modelo_multiclase, main="Importancia - Modelo Multiclase")
+} else {
+    cat("\n(Multiclase no ejecutado: target solo tiene 2 clases)\n")
+}
+
+
+################################################
+# 3. Random Forest - Regresión
+# (Convierte temporalmente target a numérico)
+################################################
+cat("\n==== Modelo 3: Random Forest para Regresión ====\n")
+
+data_reg <- data
+data_reg$target <- as.numeric(as.character(data$target))
 
 modelo_regresion <- randomForest(
-  valor ~ .,
-  data = data,
-  ntree = 300,
-  mtry = 4,
-  importance = TRUE
+    target ~ .,
+    data = data_reg,
+    ntree = 300,
+    mtry = 4,
+    importance = TRUE
 )
 
 print(modelo_regresion)
-varImpPlot(modelo_regresion)
+varImpPlot(modelo_regresion, main="Importancia - Modelo Regresión")
 
-library(randomForest)
+
+################################################
+# 4. Random Forest con Train/Test (70/30)
+################################################
+cat("\n==== Modelo 4: Train/Test Split ====\n")
 
 set.seed(123)
-
-# Crear train y test (70/30)
 idx <- sample(1:nrow(data), 0.7 * nrow(data))
+
 train <- data[idx, ]
 test  <- data[-idx, ]
 
 modelo_split <- randomForest(
-  target ~ .,
-  data = train,
-  ntree = 500,
-  mtry = 3
+    target ~ .,
+    data = train,
+    ntree = 500,
+    mtry = floor(sqrt(ncol(data) - 1)),
+    importance = TRUE
 )
+
+print(modelo_split)
 
 # Predicciones
 pred <- predict(modelo_split, test)
 
-# Métricas
-tabla <- table(Real = test$target, Pred = pred)
+# Matriz de confusión
+cat("\nMatriz de Confusión (Test):\n")
+tabla <- table(Real = test$target, Predicho = pred)
 print(tabla)
 
+# Exactitud
 accuracy <- sum(diag(tabla)) / sum(tabla)
-accuracy
+cat("\nAccuracy del modelo con Train/Test:", accuracy, "\n")
+
 
