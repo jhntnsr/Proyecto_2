@@ -1,1 +1,76 @@
+library(randomForest)
+
+# Dataset de ejemplo
+# data$target → variable binaria (0/1)
+set.seed(123)
+
+modelo_binario <- randomForest(
+  target ~ .,
+  data = data,
+  ntree = 500,
+  mtry = 3,
+  importance = TRUE
+)
+
+print(modelo_binario)
+importance(modelo_binario)
+varImpPlot(modelo_binario)
+
+library(randomForest)
+
+# data$clase → factor con varias categorías
+set.seed(123)
+
+modelo_multiclase <- randomForest(
+  clase ~ .,
+  data = data,
+  ntree = 400,
+  mtry = floor(sqrt(ncol(data) - 1)),
+  importance = TRUE
+)
+
+print(modelo_multiclase)
+varImpPlot(modelo_multiclase)
+
+library(randomForest)
+
+# data$valor → variable numérica continua
+set.seed(123)
+
+modelo_regresion <- randomForest(
+  valor ~ .,
+  data = data,
+  ntree = 300,
+  mtry = 4,
+  importance = TRUE
+)
+
+print(modelo_regresion)
+varImpPlot(modelo_regresion)
+
+library(randomForest)
+
+set.seed(123)
+
+# Crear train y test (70/30)
+idx <- sample(1:nrow(data), 0.7 * nrow(data))
+train <- data[idx, ]
+test  <- data[-idx, ]
+
+modelo_split <- randomForest(
+  target ~ .,
+  data = train,
+  ntree = 500,
+  mtry = 3
+)
+
+# Predicciones
+pred <- predict(modelo_split, test)
+
+# Métricas
+tabla <- table(Real = test$target, Pred = pred)
+print(tabla)
+
+accuracy <- sum(diag(tabla)) / sum(tabla)
+accuracy
 
