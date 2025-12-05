@@ -1,125 +1,78 @@
-###############################################
-# 4 Random Forest en R
-# Dataset con target binario (0/1)
-# Dataset esperado: data (data.frame)
-# Variable objetivo: target
-###############################################
+# --- Ejecutar librerias ---
+library(haven)   # Para .sav
+library(readxl)  # Para .xlsx
+library(dplyr)
+library(rpart)
+library(rpart.plot)
+library(arules)
 
-# Instalar librería si no está instalada
-if(!require(randomForest)){
-    install.packages("randomForest")
-    library(randomForest)
-} else {
-    library(randomForest)
+# --- Función para limpiar nombres de columnas ---
+limpiar_nombres <- function(df) {
+  # Convertir nombres a minúsculas
+  names(df) <- tolower(names(df))
+  # Reemplazar caracteres especiales por "_"
+  names(df) <- gsub("[^a-z0-9]", "_", names(df))
+  return(df)
 }
 
-set.seed(123)
-
-################################################
-# 0. Verificar estructura del dataset
-################################################
-cat("Estructura del dataset:\n")
-print(str(data))
-
-cat("\nPrimeras filas del dataset:\n")
-print(head(data))
-
-################################################
-# 1. Random Forest - Clasificación Binaria
-################################################
-cat("\n==== Modelo 1: Clasificación Binaria ====\n")
-
-modelo_binario <- randomForest(
-    target ~ .,
-    data = data,
-    ntree = 500,
-    mtry = floor(sqrt(ncol(data) - 1)),
-    importance = TRUE
-)
-
-print(modelo_binario)
-
-cat("\nImportancia de variables:\n")
-print(importance(modelo_binario))
-
-# Gráfico
-varImpPlot(modelo_binario, main="Importancia de Variables - Modelo Binario")
-
-
-################################################
-# 2. Random Forest - Clasificación Multiclase
-# (Solo se usa si target tiene > 2 clases)
-################################################
-if(length(unique(data$target)) > 2){
-    cat("\n==== Modelo 2: Clasificación Multiclase ====\n")
-
-    modelo_multiclase <- randomForest(
-        target ~ .,
-        data = data,
-        ntree = 400,
-        mtry = floor(sqrt(ncol(data) - 1)),
-        importance = TRUE
-    )
-
-    print(modelo_multiclase)
-    varImpPlot(modelo_multiclase, main="Importancia - Modelo Multiclase")
-} else {
-    cat("\n(Multiclase no ejecutado: target solo tiene 2 clases)\n")
+# --- Función para convertir variables labelled a numeric/character ---
+convertir_labelled <- function(df) {
+  df[] <- lapply(df, function(x) {
+    if ("labelled" %in% class(x)) {
+      if (is.numeric(x)) as.numeric(x)
+      else as.character(x)
+    } else x
+  })
+  df
 }
 
+# --- Crear lista de dataframes para divorcios y matrimonios ---
+años <- 2009:2024
 
-################################################
-# 3. Random Forest - Regresión
-# (Convierte temporalmente target a numérico)
-################################################
-cat("\n==== Modelo 3: Random Forest para Regresión ====\n")
+# Dataframes divorcios
+divorcios_list <- lapply(años, function(a) {
+  file_ext <- if (a %in% 2023:2024) ".xlsx" else ".sav"
+  file_path <- paste0("D:/Documentos/Maestria/Introduccion a la Mineria de Datos/Proyecto_1/Divorcios_", a, file_ext)
+  
+  df <- if (file_ext == ".sav") read_sav(file_path) else read_excel(file_path)
+  df <- limpiar_nombres(df)
+  df <- convertir_labelled(df)
+  return(df)
+})
 
-data_reg <- data
-data_reg$target <- as.numeric(as.character(data$target))
+# Dataframes matrimonios
+matrimonios_list <- lapply(años, function(a) {
+  file_ext <- if (a %in% 2023:2024) ".xlsx" else ".sav"
+  file_path <- paste0("D:/Documentos/Maestria/Introduccion a la Mineria de Datos/Proyecto_1/matrimonios_", a, file_ext)
+  
+  df <- if (file_ext == ".sav") read_sav(file_path) else read_excel(file_path)
+  df <- limpiar_nombres(df)
+  df <- convertir_labelled(df)
+  return(df)
+})
 
-modelo_regresion <- randomForest(
-    target ~ .,
-    data = data_reg,
-    ntree = 300,
-    mtry = 4,
-    importance = TRUE
-)
+# --- Identificar columnas comunes ---
+col_comunes_div <- Reduce(intersect, lapply(divorcios_list, names))
+col_comunes_mat <- Reduce(intersect, lapply(matrimonios_list, names))
 
-print(modelo_regresion)
-varImpPlot(modelo_regresion, main="Importancia - Modelo Regresión")
+# --- Filtrar solo columnas comunes ---
+divorcios_list <- lapply(divorcios_list, function(df) df[, col_comunes_div, drop = FALSE])
+matrimonios_list <- lapply(matrimonios_list, function(df) df[, col_comunes_mat, drop = FALSE])
+
+# --- Combinar todos los años en un solo dataframe ---
+d_2009_2024 <- bind_rows(divorcios_list)
+m_2009_2024 <- bind_rows(matrimonios_list)
+
+# --- Revisar resultados ---
+dim(d_2009_2024)
+dim(m_2009_2024)
+names(d_2009_2024)
+names(m_2009_2024)
+
+# --- Verificar Data Frames ---
+data.frame(1:ncol(d_2009_2024), colnames(d_2009_2024))
+data.frame(1:ncol(m_2009_2024), colnames(m_2009_2024))
 
 
-################################################
-# 4. Random Forest con Train/Test (70/30)
-################################################
-cat("\n==== Modelo 4: Train/Test Split ====\n")
-
-set.seed(123)
-idx <- sample(1:nrow(data), 0.7 * nrow(data))
-
-train <- data[idx, ]
-test  <- data[-idx, ]
-
-modelo_split <- randomForest(
-    target ~ .,
-    data = train,
-    ntree = 500,
-    mtry = floor(sqrt(ncol(data) - 1)),
-    importance = TRUE
-)
-
-print(modelo_split)
-
-# Predicciones
-pred <- predict(modelo_split, test)
-
-# Matriz de confusión
-cat("\nMatriz de Confusión (Test):\n")
-tabla <- table(Real = test$target, Predicho = pred)
-print(tabla)
-
-# Exactitud
-accuracy <- sum(diag(tabla)) / sum(tabla)
-cat("\nAccuracy del modelo con Train/Test:", accuracy, "\n")
 
 
