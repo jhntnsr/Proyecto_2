@@ -1,9 +1,11 @@
+# --- Instalar paquetes ---
+
+install.packages("randomForest")
+
 # --- Ejecutar librerias ---
 library(haven)   # Para .sav
 library(readxl)  # Para .xlsx
-library(dplyr)
-library(rpart)
-library(rpart.plot)
+library(randomForest)
 library(arules)
 
 # --- Función para limpiar nombres de columnas ---
@@ -73,6 +75,23 @@ names(m_2009_2024)
 data.frame(1:ncol(d_2009_2024), colnames(d_2009_2024))
 data.frame(1:ncol(m_2009_2024), colnames(m_2009_2024))
 
+
+# --- Trabajar en Random Forest ---
+
+datarf <- data [,c("VIC_SEXO","VIC_EDAD","VIC_ALFAB","VIC_TRABAJA","VIC_DEDICA")]
+
+dataf$VIC_SEXO <- as.factor(dataf$VIC_SEXO)
+
+dataf <- na.omit(dataf)
+
+set.seed(100)
+
+dataf <- dataf[sample(1:nrow(dataf)),]
+
+index  <- sample(1:nrow(dataf),0.8*nrow(dataf))
+
+train <- dataf[index,]
+test <- dataf[-index,]
 
 
 
