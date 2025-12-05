@@ -1,7 +1,3 @@
-# Proyecto: Matrimonios y Divorcios  
-**Autor:** Jhonatan Simon  
-**ID:** 999010164  
-
 # --- Instalar paquetes ---
 
 install.packages("rpart")
@@ -82,6 +78,7 @@ names(m_2009_2024)
 data.frame(1:ncol(d_2009_2024), colnames(d_2009_2024))
 data.frame(1:ncol(m_2009_2024), colnames(m_2009_2024))
 
+
 # --- Crear Arbol de clase de union ---
 
 
@@ -122,6 +119,7 @@ mesdeocu <- data.frame(
 resultmo <-predict(arbol_mesocu, mesdeocu, type="prob")
 resultmo
 
+
 # --- Crear Arbol para predecir departamento de registro ---
 
 arbol_depreg <- rpart(depreg ~ mesreg + clauni + depocu,
@@ -139,3 +137,23 @@ dep_regis <- data.frame(
 
 resultdr <-predict(arbol_depreg, dep_regis, type="prob")
 resultdr
+
+# --- Crear Arbol para predecir el año de registro ---
+
+arbol_ar <- rpart(a_oreg ~ edadhom + edadmuj + clauni+ depreg,
+                      data = m_2009_2024, method = "class"
+)
+
+rpart.plot( arbol_ar,type = 2, extra = 0, under = TRUE, fallen.leaves = TRUE, box.palette = "BuGn",
+            main = "Árbol para año de registro",cex = 0.5)
+
+adereg <- data.frame(
+  edadhom = 21,
+  edadmuj = 18,
+  clauni = 1,
+  depreg = 1 
+)
+
+resultar <-predict(arbol_ar, adereg, type="prob")
+resultar
+
