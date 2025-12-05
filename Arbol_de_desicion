@@ -82,13 +82,10 @@ names(m_2009_2024)
 data.frame(1:ncol(d_2009_2024), colnames(d_2009_2024))
 data.frame(1:ncol(m_2009_2024), colnames(m_2009_2024))
 
-# --- Crear Arbol de edades bajas de los conyuges ---
+# --- Crear Arbol de clase de union ---
 
-arbolcu <- rpart(clauni ~ 
-                   nachom +
-                   nacmuj+
-                   edadmuj +
-                   edadhom,
+
+arbolcu <- rpart(clauni ~  nachom +nacmuj+ edadmuj + edadhom,
                  data = m_2009_2024, method = "class"
 )
 
@@ -105,66 +102,22 @@ claseu <- data.frame(
 result <- predict(arbolcu, claseu, type ="prob" )
 result
 
+
 # --- Crear Arbol para predecir mes de ocurrencia ---
 
-arbol_mesocu <- rpart(
-  mesocu ~ edadmuj + edadhom + depreg + mupreg ,
-  data = m_2009_2024,
-  method = "class"
+arbol_mesocu <- rpart(mesocu ~ edadmuj + edadhom + nachom + nacmuj,
+                data = m_2009_2024, method = "class"
 )
 
 rpart.plot( arbol_mesocu,type = 2, extra = 0, under = TRUE, fallen.leaves = TRUE, box.palette = "BuGn",
-  main = "Árbol de decisión para mesocu",cex = 0.5)
+            main = "Árbol para mes de ocurrencia",cex = 0.5)
 
-nuevo_mesocu <- data.frame(
+mesdeocu <- data.frame(
   edadmuj = 40,
   edadhom = 45,
-  depreg = 1,
-  mupreg = 1,
-)
-
-resultmo <-predict(arbol_mesocu, nuevo_mesocu, type="prob")
-resultmo
-
-# --- Crear Arbol para predecir departamento de registro ---
-
-arbol_depreg <- rpart(
-  depreg ~ edadmuj + edadhom + nachom + nacmuj,
-  data = m_2009_2024,
-  method = "class"
-)
-
-rpart.plot( arbol_depreg, type = 2, extra = 0, under = TRUE, fallen.leaves = TRUE, box.palette = "Purples",
-  main = "Árbol de decisión para depreg", cex = 0.5 )
-
-nuevo_depreg <- data.frame(
-  edadmuj = 30,
-  edadhom = 35,
   nachom = 320,
-  nacmuj = 320,
+  nacmuj = 320
 )
 
-resultdep <- predict(arbol_depreg, nuevo_depreg, type="prob")
-resultdep
-
-# --- Crear Arbol para predecir año de registro ---
-
-arbol_aoreg <- rpart(
-  a_oreg ~  depreg + mupreg + mesreg + depocu,
-  data = m_2009_2024,
-  method = "class"
-)
-
-rpart.plot( arbol_aoreg, type = 2, extra = 0, under = TRUE, fallen.leaves = TRUE, box.palette = "BuGn",
-  main = "Árbol de decisión para a_oreg", cex = 0.5
-)
-
-nuevo_aoreg <- data.frame(
-  depreg = 11,
-  mupreg = 2,
-  mesreg = 4,
-  depocu = 11,
-)
-
-resultaoreg = predict(arbol_aoreg, nuevo_aoreg, type="prob")
-resultaoreg
+resultmo <-predict(arbol_mesocu, mesdeocu, type="prob")
+resultmo
