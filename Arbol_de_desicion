@@ -122,7 +122,7 @@ mesdeocu <- data.frame(
 resultmo <-predict(arbol_mesocu, mesdeocu, type="prob")
 resultmo
 
-# --- Crear Arbol para predecir el anio de registro ---
+# --- Crear Arbol para predecir departamento de registro ---
 
 arbol_depreg <- rpart(depreg ~ mesreg + clauni + depocu,
                       data = m_2009_2024, method = "class"
