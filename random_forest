@@ -5,8 +5,9 @@ install.packages("randomForest")
 # --- Ejecutar librerias ---
 library(haven)   # Para .sav
 library(readxl)  # Para .xlsx
-library(randomForest)
+library(dplyr)
 library(arules)
+library(randomForest)
 
 # --- Función para limpiar nombres de columnas ---
 limpiar_nombres <- function(df) {
@@ -76,7 +77,7 @@ data.frame(1:ncol(d_2009_2024), colnames(d_2009_2024))
 data.frame(1:ncol(m_2009_2024), colnames(m_2009_2024))
 
 
-# --- Trabajar en Random Forest ---
+# --- Random Forest ---
 
 datarf <- data [,c("VIC_SEXO","VIC_EDAD","VIC_ALFAB","VIC_TRABAJA","VIC_DEDICA")]
 
@@ -92,6 +93,35 @@ index  <- sample(1:nrow(dataf),0.8*nrow(dataf))
 
 train <- dataf[index,]
 test <- dataf[-index,]
+
+forest <- randomForest (VIC_SEXO ~ 
+                          VIC_EDAD +
+                          VIC_ALFAB +
+                          VIC_TRABAJA +
+                          VIC_DEDICA,
+                        data = train, 
+                        ntree = 100,
+                        mtry = 4
+)
+
+prueba <- predict (forest,test)
+prueba
+
+matriz <- table(test$VIC_SEXO, prueba)
+matriz
+
+pre <- sum(diag(matriz))/sum(matriz)
+pre
+
+persona <- data.frame(
+  VIC_EDAD =c(18),
+  VIC_ALFAB =c(2),
+  VIC_TRABAJA =c(2),
+  VIC_DEDICA =c(4)
+)
+
+result <- predict(forest, persona, type ="prob" )
+result
 
 
 
