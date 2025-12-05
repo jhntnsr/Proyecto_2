@@ -121,3 +121,21 @@ mesdeocu <- data.frame(
 
 resultmo <-predict(arbol_mesocu, mesdeocu, type="prob")
 resultmo
+
+# --- Crear Arbol para predecir el anio de registro ---
+
+arbol_depreg <- rpart(depreg ~ mesreg + clauni + depocu,
+                      data = m_2009_2024, method = "class"
+)
+
+rpart.plot( arbol_depreg,type = 2, extra = 0, under = TRUE, fallen.leaves = TRUE, box.palette = "BuGn",
+            main = "Árbol para departamento de registro",cex = 0.5)
+
+dep_regis <- data.frame(
+  mesreg = 1,
+  clauni = 1,
+  depocu = 1
+)
+
+resultdr <-predict(arbol_depreg, dep_regis, type="prob")
+resultdr
