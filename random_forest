@@ -76,52 +76,178 @@ names(m_2009_2024)
 data.frame(1:ncol(d_2009_2024), colnames(d_2009_2024))
 data.frame(1:ncol(m_2009_2024), colnames(m_2009_2024))
 
+# --- Random Forest Para la Clase de Unión ---
 
-# --- Random Forest ---
+# Selección de columnas
+datarfcu <- m_2009_2024[, c("clauni", "nachom", "nacmuj", "edadmuj", "edadhom")]
 
-datarf <- data [,c("VIC_SEXO","VIC_EDAD","VIC_ALFAB","VIC_TRABAJA","VIC_DEDICA")]
+# Tipos
+datarfcu$clauni  <- as.factor(datarfcu$clauni)
+datarfcu$nachom  <- as.numeric(datarfcu$nachom)
+datarfcu$nacmuj  <- as.numeric(datarfcu$nacmuj)
+datarfcu$edadmuj <- as.numeric(datarfcu$edadmuj)
+datarfcu$edadhom <- as.numeric(datarfcu$edadhom)
 
-dataf$VIC_SEXO <- as.factor(dataf$VIC_SEXO)
+# (Opcional) Reemplazar 999 por NA si aplica
+# datarfcu[datarfcu == 999] <- NA
 
-dataf <- na.omit(dataf)
+# Quitar NA
+datarfcu <- na.omit(datarfcu)
 
-set.seed(100)
+# Mezclar filas
+set.seed(50)
+datarfcu <- datarfcu[sample(1:nrow(datarfcu)), ]
 
-dataf <- dataf[sample(1:nrow(dataf)),]
+# Split 80/20
+set.seed(50)
+indexcu <- sample(1:nrow(datarfcu), size = floor(0.8 * nrow(datarfcu)))
+train   <- datarfcu[indexcu, ]
+test    <- datarfcu[-indexcu, ]
 
-index  <- sample(1:nrow(dataf),0.8*nrow(dataf))
-
-train <- dataf[index,]
-test <- dataf[-index,]
-
-forest <- randomForest (VIC_SEXO ~ 
-                          VIC_EDAD +
-                          VIC_ALFAB +
-                          VIC_TRABAJA +
-                          VIC_DEDICA,
-                        data = train, 
-                        ntree = 100,
-                        mtry = 4
+# Entrenamiento del Random Forest
+forestcu <- randomForest(
+  clauni ~ nachom + nacmuj + edadmuj + edadhom,
+  data  = train,
+  ntree = 50,
+  mtry  = 4,
+  importance = TRUE
 )
 
-prueba <- predict (forest,test)
-prueba
+print(forestcu)
 
-matriz <- table(test$VIC_SEXO, prueba)
-matriz
+# Predicción en test (clase)
+pruebacu <- predict(forestcu, newdata = test, type = "class")
+pruebacu
 
-pre <- sum(diag(matriz))/sum(matriz)
-pre
+# Matriz de confusión y precisión
+matrizcu <- table(Real = test$clauni, Predicho = pruebacu)
+matrizcu
 
-persona <- data.frame(
-  VIC_EDAD =c(18),
-  VIC_ALFAB =c(2),
-  VIC_TRABAJA =c(2),
-  VIC_DEDICA =c(4)
+precu <- sum(diag(matrizcu)) / sum(matrizcu)
+precu
+
+# Predicción de probabilidades para un caso nuevo
+clasedu <- data.frame(
+  edadmuj = 50,
+  edadhom = 60,
+  nachom  = 320,
+  nacmuj  = 320
 )
 
-result <- predict(forest, persona, type ="prob" )
-result
+resultcu <- predict(forestcu, newdata = clasedu, type = "prob")
+resultcu
 
 
+plot(forestcu)
+
+
+
+# --- Random Forest para Mes de Ocurrencia (mesocu) ---
+
+
+# Selección de columnas desde el dataset principal
+data_mo <- m_2009_2024[, c("mesocu", "nachom", "nacmuj", "edadmuj", "edadhom")]
+
+data_mo$mesocu  <- as.factor(data_mo$mesocu)
+
+# Predictoras numéricas (ajusta si algunas son factores por diseño)
+data_mo$nachom  <- as.numeric(data_mo$nachom)
+data_mo$nacmuj  <- as.numeric(data_mo$nacmuj)
+data_mo$edadmuj <- as.numeric(data_mo$edadmuj)
+data_mo$edadhom <- as.numeric(data_mo$edadhom)
+
+# Mezclar filas para evitar sesgo por orden
+set.seed(50)
+data_mo <- data_mo[sample(1:nrow(data_mo)), ]
+
+# Split 80/20 (entrenamiento/prueba)
+set.seed(50)
+index_mo <- sample(1:nrow(data_mo), size = floor(0.8 * nrow(data_mo)))
+train_mo <- data_mo[index_mo, ]
+test_mo  <- data_mo[-index_mo, ]
+
+# Entrenamiento del Random Forest
+forest_mo <- randomForest(
+  mesocu ~ edadmuj + edadhom + nachom + nacmuj,
+  data  = train_mo,
+  ntree = 100,      # puedes subir a 200–500 para más estabilidad
+  mtry  = 2,        # sqrt(p) ~ 2 para p=4; prueba 2–3–4
+  importance = TRUE
+)
+
+print(forest_mo) 
+
+# Predicción en el conjunto de prueba
+pred_mo <- predict(forest_mo, newdata = test_mo, type = "class")
+
+# Matriz de confusión y exactitud (accuracy)
+conf_mo <- table(Real = test_mo$mesocu, Predicho = pred_mo)
+conf_mo
+
+acc_mo <- sum(diag(conf_mo)) / sum(conf_mo)
+acc_mo
+
+nuevo_mo <- data.frame(
+  edadmuj = 40,
+  edadhom = 45,
+  nachom  = 320,
+  nacmuj  = 320
+)
+
+probs_mo <- predict(forest_mo, newdata = nuevo_mo, type = "prob")
+probs_mo  # Probabilidad por mes (1–12)
+
+plot(forest_mo)
+
+
+
+# --- Random Forest para Departamento de Registro (depreg) ---
+
+data_dr <- m_2009_2024[, c("depreg", "mesreg", "clauni", "depocu")]
+
+data_dr$depreg <- as.factor(data_dr$depreg)
+
+data_dr$mesreg <- as.factor(data_dr$mesreg)
+data_dr$clauni <- as.factor(data_dr$clauni)
+data_dr$depocu <- as.factor(data_dr$depocu)
+
+
+# Mezclar filas para evitar sesgo por orden
+set.seed(50)
+data_dr <- data_dr[sample(1:nrow(data_dr)), ]
+
+# Split 80/20 (entrenamiento/prueba)
+set.seed(50)
+index_dr <- sample(1:nrow(data_dr), size = floor(0.8 * nrow(data_dr)))
+train_dr <- data_dr[index_dr, ]
+test_dr  <- data_dr[-index_dr, ]
+
+# Entrenamiento del Random Forest
+# Nota: al ser todas las predictoras factores, randomForest construye árboles de clasificación multiclase.
+forest_dr <- randomForest(
+  depreg ~ mesreg + clauni + depocu,
+  data  = train_dr,
+  ntree = 200,       # puedes ajustar: 200–500 mejora estabilidad
+  mtry  = 2,         # sqrt(p) ≈ 2 para p = 3; prueba también mtry = 3
+  importance = TRUE
+)
+
+print(forest_dr)
+
+# Predicción en el conjunto de prueba
+pred_dr <- predict(forest_dr, newdata = test_dr, type = "class")
+
+# Matriz de confusión y exactitud (accuracy)
+conf_dr <- table(Real = test_dr$depreg, Predicho = pred_dr)
+conf_dr
+
+acc_dr <- sum(diag(conf_dr)) / sum(conf_dr)
+acc_dr
+
+# Probabilidades por clase (opcional)
+probs_dr <- predict(forest_dr, newdata = test_dr, type = "prob")
+head(probs_dr)
+
+
+plot(forest_dr)
 
