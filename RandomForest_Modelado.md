@@ -4,7 +4,7 @@ Este documento describe la implementación de **cuatro modelos Random Forest** a
 
 ---
 
-## 📂 1. Preparación del Entorno
+## 1. Preparación del Entorno
 
 ```r
 if(!require(randomForest)){
@@ -18,7 +18,7 @@ set.seed(123)
 
 ---
 
-## 📊 2. Exploración Inicial del Dataset
+## 2. Exploración Inicial del Dataset
 
 Antes de entrenar un modelo, es importante validar la estructura del dataset.
 
@@ -37,7 +37,7 @@ Se asume:
 
 ---
 
-# 🌲 3. Modelo 1 – Random Forest para Clasificación Binaria
+# 3. Modelo 1 – Random Forest para Clasificación Binaria
 
 ```r
 modelo_binario <- randomForest(
@@ -55,7 +55,7 @@ varImpPlot(modelo_binario, main="Importancia de Variables - Modelo Binario")
 
 ---
 
-# 🎨 4. Modelo 2 – Random Forest Multiclase
+# 4. Modelo 2 – Random Forest Multiclase
 
 ```r
 if(length(unique(data$target)) > 2){
@@ -76,7 +76,7 @@ if(length(unique(data$target)) > 2){
 
 ---
 
-# 📈 5. Modelo 3 – Random Forest para Regresión
+# 5. Modelo 3 – Random Forest para Regresión
 
 ```r
 data_reg <- data
@@ -96,7 +96,7 @@ varImpPlot(modelo_regresion, main="Importancia - Modelo Regresión")
 
 ---
 
-# 🧪 6. Modelo 4 – Random Forest con Train/Test (70/30)
+# 6. Modelo 4 – Random Forest con Train/Test (70/30)
 
 ```r
 set.seed(123)
@@ -126,7 +126,7 @@ cat("\nAccuracy del modelo con Train/Test:", accuracy, "\n")
 
 ---
 
-# ✅ 7. Conclusiones
+# 7. Conclusiones
 
 Los cuatro modelos permiten:
 
